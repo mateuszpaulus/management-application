@@ -1,0 +1,9 @@
+### Create a new user entity
+POST http://localhost:4001/api/users
+Content-Type: application/json
+
+{
+  "username": "admin_user",
+  "email": "admin_user@example.com",
+  "password": "password"
+}

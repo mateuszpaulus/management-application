@@ -1,0 +1,6 @@
+### GET request to get all users
+@id = 6a2ee1ba-cf9f-49f0-939e-f95dc97af417
+
+GET http://localhost:4001/api/users/{{id}}
+#Authorization: Bearer {{token}}
+###
