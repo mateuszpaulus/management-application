@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.pm.grpc.user";
+option java_outer_classname = "UserServiceProto";
+
+package user;
+
+service UserService {
+  rpc ValidateCredentials(ValidateCredentialsRequest) returns (ValidateCredentialsResponse);
+
+  rpc GetUserById(GetUserByIdRequest) returns (UserResponse);
+}
+
+message ValidateCredentialsRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message ValidateCredentialsResponse {
+  bool success = 1;
+  string message = 2;
+  UserData user = 3;
+}
+
+message GetUserByIdRequest {
+  string user_id = 1;
+}
+
+message UserResponse {
+  bool success = 1;
+  string message = 2;
+  UserData user = 3;
+}
+
+message UserData {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+}
