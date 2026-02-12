@@ -1,0 +1,9 @@
+### Create a new todo entity
+POST http://localhost:4000/api/todos
+Content-Type: application/json
+
+{
+  "title": "First todo",
+  "description": "desc 1",
+  "completed": false
+}

@@ -1,0 +1,6 @@
+### GET request to get all todos
+@id = 69812e22-7f89-4f3e-bf89-e464de8ea5da
+
+GET http://localhost:4000/api/todos/{{id}}
+#Authorization: Bearer {{token}}
+###

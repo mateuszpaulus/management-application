@@ -1,0 +1,11 @@
+### Create a new todo entity
+@id = 69812e22-7f89-4f3e-bf89-e464de8ea5da
+
+POST http://localhost:4000/api/todos/{{id}}
+Content-Type: application/json
+
+{
+  "title": "First todo",
+  "description": "desc 1",
+  "completed": false
+}
