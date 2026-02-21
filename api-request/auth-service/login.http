@@ -2,12 +2,8 @@
 POST http://localhost:4002/login
 Content-Type: application/json
 
-//{
-//  "email": "testuser@test.com",
-//  "password": "password123"
-//}
 {
-  "email": "admin_user@example.com",
+  "email": "admin_user1@example.com",
   "password": "password"
 }
 > {%

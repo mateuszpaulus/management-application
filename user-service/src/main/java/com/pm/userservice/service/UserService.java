@@ -33,7 +33,7 @@ public class UserService {
         User user = new User();
         user.setUsername(userRequestDTO.getUsername());
         user.setEmail(userRequestDTO.getEmail());
-        user.setPassword(userRequestDTO.getPassword()); // W produkcji: hashowanie hasła!
+        user.setPassword(userRequestDTO.getPassword());
 
         User savedUser = userRepository.save(user);
         return toResponseDTO(savedUser);
@@ -68,7 +68,6 @@ public class UserService {
             throw new RuntimeException("Username already exists");
         }
 
-        // Sprawdź czy nowy email nie jest zajęty przez innego użytkownika
         if (!user.getEmail().equals(userRequestDTO.getEmail()) &&
                 userRepository.existsByEmail(userRequestDTO.getEmail())) {
             throw new RuntimeException("Email already exists");

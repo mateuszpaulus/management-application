@@ -1,101 +1,259 @@
 package com.pm.userservice.grpc;
 
-import com.pm.grpc.user.GetUserByIdRequest;
-import com.pm.grpc.user.UserData;
-import com.pm.grpc.user.UserResponse;
+import com.pm.grpc.user.*;
 import com.pm.grpc.user.UserServiceGrpc.UserServiceImplBase;
-import com.pm.grpc.user.ValidateCredentialsRequest;
-import com.pm.grpc.user.ValidateCredentialsResponse;
 import com.pm.userservice.model.User;
+import com.pm.userservice.model.enums.UserRole;
 import com.pm.userservice.repository.UserRepository;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @GrpcService
 public class UserGrpcServiceImpl extends UserServiceImplBase {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserGrpcServiceImpl(UserRepository userRepository) {
+    public UserGrpcServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-    }
+        this.passwordEncoder = passwordEncoder;
 
-    @Override
-    public void getUserById(GetUserByIdRequest request, StreamObserver<UserResponse> responseObserver) {
-        try {
-            UUID userId = UUID.fromString(request.getUserId());
-            Optional<User> userOpt = userRepository.findById(userId);
-
-            if (userOpt.isPresent()) {
-                User user = userOpt.get();
-
-                UserResponse response = UserResponse.newBuilder()
-                        .setSuccess(true)
-                        .setMessage("User found")
-                        .setUser(UserData.newBuilder()
-                                .setId(user.getId().toString())
-                                .setUsername(user.getUsername())
-                                .setEmail(user.getEmail())
-                                .setRole(user.getRole() != null ? user.getRole().toString() : "USER")
-                                .build())
-                        .build();
-
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-            } else {
-                UserResponse response = UserResponse.newBuilder()
-                        .setSuccess(false)
-                        .setMessage("User not found")
-                        .build();
-
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-            }
-        } catch (Exception e) {
-            responseObserver.onError(new RuntimeException("Error fetching user: " + e.getMessage()));
-        }
     }
 
     @Override
     public void validateCredentials(
             ValidateCredentialsRequest request,
-            StreamObserver<com.pm.grpc.user.ValidateCredentialsResponse> responseObserver) {
+            StreamObserver<ValidateCredentialsResponse> responseObserver) {
 
-        String email = request.getEmail();
-        String password = request.getPassword();
+        try {
+            String email = request.getEmail();
+            String password = request.getPassword();
 
-        Optional<User> userOpt = userRepository.findByEmail(email);
-
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            // TODO: Replace with BCrypt password verification
-            if (password.equals(user.getPassword())) {
-                ValidateCredentialsResponse response = ValidateCredentialsResponse.newBuilder()
-                        .setSuccess(true)
-                        .setMessage("Authentication successful")
-                        .setUser(UserData.newBuilder()
-                                .setId(user.getId().toString())
-                                .setUsername(user.getUsername())
-                                .setEmail(user.getEmail())
-                                .setRole(user.getRole() != null ? user.getRole().toString() : "USER")
-                                .build())
-                        .build();
-
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
+            if (email.trim().isEmpty()) {
+                responseObserver.onError(
+                        Status.INVALID_ARGUMENT
+                                .withDescription("Email is required")
+                                .asRuntimeException()
+                );
                 return;
             }
+
+            if (password.trim().isEmpty()) {
+                responseObserver.onError(
+                        Status.INVALID_ARGUMENT
+                                .withDescription("Password is required")
+                                .asRuntimeException()
+                );
+                return;
+            }
+
+            Optional<User> userOpt = userRepository.findByEmail(email);
+
+            if (userOpt.isEmpty()) {
+                responseObserver.onError(
+                        Status.UNAUTHENTICATED
+                                .withDescription("Invalid email or password")
+                                .asRuntimeException()
+                );
+                return;
+            }
+
+            User user = userOpt.get();
+
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                responseObserver.onError(
+                        Status.UNAUTHENTICATED
+                                .withDescription("Invalid email or password")
+                                .asRuntimeException()
+                );
+                return;
+            }
+
+            ValidateCredentialsResponse response = ValidateCredentialsResponse.newBuilder()
+                    .setUser(UserData.newBuilder()
+                            .setId(user.getId().toString())
+                            .setUsername(user.getUsername())
+                            .setEmail(user.getEmail())
+                            .setRole(user.getRole().toString())
+                            .build())
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("Authentication service error")
+                            .asRuntimeException()
+            );
         }
-
-        ValidateCredentialsResponse response = ValidateCredentialsResponse.newBuilder()
-                .setSuccess(false)
-                .setMessage("Invalid credentials")
-                .build();
-
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
+
+//    @Override
+//    public void validateCredentials(
+//            ValidateCredentialsRequest request,
+//            StreamObserver<com.pm.grpc.user.ValidateCredentialsResponse> responseObserver) {
+//
+//        String email = request.getEmail();
+//        String password = request.getPassword();
+//
+//        Optional<User> userOpt = userRepository.findByEmail(email);
+//
+//        if (userOpt.isPresent()) {
+//            User user = userOpt.get();
+//            if (passwordEncoder.matches(
+//                    password,
+//                    user.getPassword()
+//            )) {
+//                ValidateCredentialsResponse response = ValidateCredentialsResponse.newBuilder()
+//                        .setSuccess(true)
+//                        .setMessage("Authentication successful")
+//                        .setUser(UserData.newBuilder()
+//                                .setId(user.getId().toString())
+//                                .setUsername(user.getUsername())
+//                                .setEmail(user.getEmail())
+//                                .setRole(user.getRole().toString())
+//                                .build())
+//                        .build();
+//
+//                responseObserver.onNext(response);
+//                responseObserver.onCompleted();
+//                return;
+//            }
+//        }
+//
+//        ValidateCredentialsResponse response = ValidateCredentialsResponse.newBuilder()
+//                .setSuccess(false)
+//                .setMessage("Invalid credentials")
+//                .build();
+//
+//        responseObserver.onNext(response);
+//        responseObserver.onCompleted();
+//    }
+
+//    @Override
+//    public void createUser(
+//            CreateUserRequest request,
+//            StreamObserver<CreateUserResponse> responseObserver) {
+//
+//        try {
+//            String username = request.getUsername();
+//            String email = request.getEmail();
+//            String password = request.getPassword();
+//
+//
+//            if (userRepository.existsByEmail(email)) {
+//                CreateUserResponse response = CreateUserResponse.newBuilder()
+//                        .setSuccess(false)
+//                        .setMessage("User with this email already exists")
+//                        .build();
+//
+//                responseObserver.onNext(response);
+//                responseObserver.onCompleted();
+//                return;
+//            }
+//
+//            if (userRepository.existsByUsername(username)) {
+//                CreateUserResponse response = CreateUserResponse.newBuilder()
+//                        .setSuccess(false)
+//                        .setMessage("User with this username already exists")
+//                        .build();
+//
+//                responseObserver.onNext(response);
+//                responseObserver.onCompleted();
+//                return;
+//            }
+//
+//            User newUser = new User();
+//            newUser.setUsername(username);
+//            newUser.setEmail(email);
+//            newUser.setPassword(passwordEncoder.encode(password));
+//            newUser.setRole(UserRole.USER);
+//
+//            User savedUser = userRepository.save(newUser);
+//
+//            CreateUserResponse response = CreateUserResponse.newBuilder()
+//                    .setSuccess(true)
+//                    .setMessage("User created successfully")
+//                    .setUser(UserData.newBuilder()
+//                            .setId(savedUser.getId().toString())
+//                            .setUsername(savedUser.getUsername())
+//                            .setEmail(savedUser.getEmail())
+//                            .setRole(savedUser.getRole() != null ? savedUser.getRole().toString() : "USER")
+//                            .build())
+//                    .build();
+//
+//            responseObserver.onNext(response);
+//            responseObserver.onCompleted();
+//
+//        } catch (Exception e) {
+//            responseObserver.onError(
+//                    Status.INTERNAL
+//                            .withDescription("Error creating user: " + e.getMessage())
+//                            .asRuntimeException()
+//            );
+//        }
+
+    @Override
+    public void createUser(
+            CreateUserRequest request,
+            StreamObserver<CreateUserResponse> responseObserver) {
+
+        try {
+            String username = request.getUsername();
+            String email = request.getEmail();
+            String password = request.getPassword();
+
+            if (userRepository.existsByEmail(email)) {
+                responseObserver.onError(
+                        Status.ALREADY_EXISTS
+                                .withDescription("User with email '" + email + "' already exists")
+                                .asRuntimeException()
+                );
+                return;
+            }
+
+            if (userRepository.existsByUsername(username)) {
+                responseObserver.onError(
+                        Status.ALREADY_EXISTS
+                                .withDescription("User with username '" + username + "' already exists")
+                                .asRuntimeException()
+                );
+                return;
+            }
+
+            User newUser = new User();
+            newUser.setUsername(username);
+            newUser.setEmail(email);
+            newUser.setPassword(passwordEncoder.encode(password));
+            newUser.setRole(UserRole.USER);
+
+            User savedUser = userRepository.save(newUser);
+
+            CreateUserResponse response = CreateUserResponse.newBuilder()
+                    .setUser(UserData.newBuilder()
+                            .setId(savedUser.getId().toString())
+                            .setUsername(savedUser.getUsername())
+                            .setEmail(savedUser.getEmail())
+                            .setRole(savedUser.getRole().toString())
+                            .build())
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("Failed to create user: " + e.getMessage())
+                            .asRuntimeException()
+            );
+        }
+    }
+
 }

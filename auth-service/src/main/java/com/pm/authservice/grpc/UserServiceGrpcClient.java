@@ -1,20 +1,42 @@
 package com.pm.authservice.grpc;
 
-import com.pm.authservice.dto.LoginRequestDTO;
+import com.pm.authservice.dto.loginDto.LoginRequestDTO;
+import com.pm.authservice.dto.registerDto.RegisterRequestDTO;
 import com.pm.authservice.dto.UserDTO;
+import com.pm.authservice.exception.InvalidCredentialsException;
+import com.pm.authservice.exception.RegistrationException;
+import com.pm.authservice.exception.UserAlreadyExistsException;
 import com.pm.grpc.user.*;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.pm.grpc.user.UserServiceGrpc.UserServiceBlockingStub;
+import com.pm.grpc.user.CreateUserRequest;
+import com.pm.grpc.user.CreateUserResponse;
 
 @Service
 public class UserServiceGrpcClient {
     private static final Logger log = LoggerFactory.getLogger(UserServiceGrpcClient.class);
 
-    @GrpcClient("user-service")
-    private UserServiceGrpc.UserServiceBlockingStub userServiceStub;
+    //    @GrpcClient("user-service")
+    private final UserServiceBlockingStub userServiceStub;
+
+    public UserServiceGrpcClient(
+            @Value("${user.service.address:localhost}") String serverAddress,
+            @Value("${user.service.grpc.port:9001}") int serverPort
+    ) {
+
+        log.info("Connecting to User Service at {}:{}", serverAddress, serverPort);
+
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(serverAddress,
+                serverPort).usePlaintext().build();
+
+        userServiceStub = UserServiceGrpc.newBlockingStub(channel);
+    }
 
     public UserDTO validateCredentials(LoginRequestDTO loginRequestDTO) {
         try {
@@ -27,45 +49,63 @@ public class UserServiceGrpcClient {
 
             ValidateCredentialsResponse response = userServiceStub.validateCredentials(request);
 
-            if (response.getSuccess()) {
-                log.info("Credentials validated successfully for user: {}", loginRequestDTO.getEmail());
-                UserData userData = response.getUser();
-
-                return UserDTO.fromUserData(userData);
-            } else {
-                log.warn("Invalid credentials for user: {}", loginRequestDTO.getEmail());
-                return null;
-            }
+            log.info("Credentials validated successfully for user: {}", loginRequestDTO.getEmail());
+            return UserDTO.fromUserData(response.getUser());
 
         } catch (StatusRuntimeException e) {
-            log.error("gRPC error while validating credentials: {}", e.getMessage());
-            throw new RuntimeException("Failed to communicate with user-service", e);
+            log.error("gRPC error while validating credentials: {} - {}",
+                    e.getStatus().getCode(),
+                    e.getStatus().getDescription());
+
+            switch (e.getStatus().getCode()) {
+                case UNAUTHENTICATED:
+                    throw new InvalidCredentialsException("Invalid email or password");
+                case INVALID_ARGUMENT:
+                    throw new IllegalArgumentException(e.getStatus().getDescription());
+                case INTERNAL:
+                case UNAVAILABLE:
+                default:
+                    throw new RuntimeException(
+                            "Failed to communicate with user-service: " + e.getStatus().getDescription(),
+                            e
+                    );
+            }
         }
     }
-
-    public UserDTO getUserById(String userId) {
+    
+    public UserDTO createUser(RegisterRequestDTO registerRequestDTO) {
         try {
-            log.debug("Fetching user by ID: {}", userId);
+            log.debug("Creating new user: {}", registerRequestDTO.getEmail());
 
-            GetUserByIdRequest request = GetUserByIdRequest.newBuilder()
-                    .setUserId(userId)
+            CreateUserRequest request = CreateUserRequest.newBuilder()
+                    .setUsername(registerRequestDTO.getUsername())
+                    .setEmail(registerRequestDTO.getEmail())
+                    .setPassword(registerRequestDTO.getPassword())
                     .build();
 
-            UserResponse response = userServiceStub.getUserById(request);
+            CreateUserResponse response = userServiceStub.createUser(request);
 
-            if (response.getSuccess()) {
-                UserData userData = response.getUser();
-
-                return UserDTO.fromUserData(userData);
-
-            } else {
-                log.warn("User not found with ID: {}", userId);
-                return null;
-            }
+            log.info("User created successfully: {}", registerRequestDTO.getEmail());
+            return UserDTO.fromUserData(response.getUser());
 
         } catch (StatusRuntimeException e) {
-            log.error("gRPC error while fetching user: {}", e.getMessage());
-            throw new RuntimeException("Failed to communicate with user-service", e);
+            log.error("gRPC error while creating user: {} - {}",
+                    e.getStatus().getCode(),
+                    e.getStatus().getDescription());
+
+            switch (e.getStatus().getCode()) {
+                case ALREADY_EXISTS:
+                    throw new UserAlreadyExistsException(e.getStatus().getDescription());
+                case INVALID_ARGUMENT:
+                    throw new IllegalArgumentException(e.getStatus().getDescription());
+                case INTERNAL:
+                case UNAVAILABLE:
+                default:
+                    throw new RegistrationException(
+                            "Failed to communicate with user-service: " + e.getStatus().getDescription(),
+                            e
+                    );
+            }
         }
     }
 }

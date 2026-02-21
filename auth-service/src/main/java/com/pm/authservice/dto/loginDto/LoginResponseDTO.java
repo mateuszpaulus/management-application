@@ -1,5 +1,6 @@
-package com.pm.authservice.dto;
+package com.pm.authservice.dto.loginDto;
 
+import com.pm.authservice.dto.UserDTO;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,19 +17,4 @@ public class LoginResponseDTO {
         this.user = user;
     }
 
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public UserDTO getUser() {
-        return user;
-    }
-
-    public void setUser(UserDTO user) {
-        this.user = user;
-    }
 }
