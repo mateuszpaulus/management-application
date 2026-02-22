@@ -7,3 +7,14 @@ Content-Type: application/json
   "email": "admin_user@example.com",
   "password": "password"
 }
+
+###
+
+POST http://localhost:4002/register
+Content-Type: application/json
+
+{
+  "username": "regular_user",
+  "email": "regular_user@example.com",
+  "password": "Password1!"
+}

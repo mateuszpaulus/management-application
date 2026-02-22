@@ -5,3 +5,9 @@ GET http://localhost:8080/api/todos
 Authorization: Bearer {{token}}
 
 ###
+
+### USER should only see own todos
+GET http://localhost:8080/api/todos
+Authorization: Bearer {{user_token}}
+
+###

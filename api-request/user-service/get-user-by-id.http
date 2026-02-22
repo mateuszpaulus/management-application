@@ -1,6 +1,21 @@
-### GET request to get all users
-@id = 6a2ee1ba-cf9f-49f0-939e-f95dc97af417
+### Get user by id (ADMIN)
+@id = {{regular_user_id}}
+@adminId = {{admin_user_id}}
 
-GET http://localhost:4001/api/users/{{id}}
-#Authorization: Bearer {{token}}
+
+GET http://localhost:8080/api/users/{{adminId}}
+Authorization: Bearer {{token}}
+
+###
+
+
+GET http://localhost:8080/api/users/{{id}}
+Authorization: Bearer {{token}}
+
+###
+
+### Ownership check (USER reading another user should be 403)
+GET http://localhost:8080/api/users/{{admin_user_id}}
+Authorization: Bearer {{user_token}}
+
 ###

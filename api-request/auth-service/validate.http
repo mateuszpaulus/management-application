@@ -3,3 +3,10 @@
 #GET http://localhost:4004/auth/validate
 GET http://localhost:8080/auth/validate
 Authorization: Bearer {{token}}
+
+# Expected 200 body:
+# {
+#   "userId": "...",
+#   "email": "...",
+#   "role": "ADMIN" | "USER"
+# }

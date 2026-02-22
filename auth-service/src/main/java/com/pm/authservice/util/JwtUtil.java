@@ -2,6 +2,7 @@ package com.pm.authservice.util;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,9 +25,10 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String email, String role) {
+    public String generateToken(String userId, String email, String role) {
         return Jwts.builder()
                 .subject(email)
+                .claim("userId", userId)
                 .claim("role", role)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
@@ -34,14 +36,13 @@ public class JwtUtil {
                 .compact();
     }
 
-    public void validateToken(String token) {
+    public Claims extractClaims(String token) {
         try {
-
-            Jwts.parser()
+            return Jwts.parser()
                     .verifyWith((SecretKey) secretKey)
                     .build()
-                    .parseSignedClaims(token);
-
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (SignatureException e) {
             throw new JwtException("Invalid JWT signature");
         } catch (JwtException e) {

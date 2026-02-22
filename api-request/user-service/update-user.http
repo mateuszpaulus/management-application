@@ -1,11 +1,25 @@
-### Create a new user entity
-@id = 69812e22-7f89-4f3e-bf89-e464de8ea5da
+### USER updates own profile
+@id = {{regular_user_id}}
 
-POST http://localhost:4001/api/users/{{id}}
+PUT http://localhost:8080/api/users/{{id}}
 Content-Type: application/json
+Authorization: Bearer {{user_token}}
 
 {
-  "title": "First todo",
-  "description": "desc 1",
-  "completed": false
+  "username": "regular_user_updated",
+  "email": "regular_user@example.com",
+  "password": "password123"
+}
+
+###
+
+### Ownership check (USER updates another user should be 403)
+PUT http://localhost:8080/api/users/{{admin_user_id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "username": "admin_user_hacked",
+  "email": "admin_user@example.com",
+  "password": "password123"
 }

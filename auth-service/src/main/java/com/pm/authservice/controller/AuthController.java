@@ -1,11 +1,13 @@
 package com.pm.authservice.controller;
 
-import com.pm.authservice.dto.*;
+import com.pm.authservice.dto.UserDTO;
 import com.pm.authservice.dto.loginDto.LoginRequestDTO;
 import com.pm.authservice.dto.loginDto.LoginResponseDTO;
 import com.pm.authservice.dto.registerDto.RegisterRequestDTO;
 import com.pm.authservice.dto.registerDto.RegisterResponseDTO;
+import com.pm.authservice.dto.tokenDto.TokenValidationResponseDTO;
 import com.pm.authservice.service.AuthService;
+import io.jsonwebtoken.JwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -32,15 +34,18 @@ public class AuthController {
 
     @Operation(summary = "Validate Token")
     @GetMapping("/validate")
-    public ResponseEntity<Void> validateToken(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<TokenValidationResponseDTO> validateToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return authService.validateToken(authHeader.substring(7))
-                ? ResponseEntity.ok().build()
-                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            TokenValidationResponseDTO response = authService.validateAndExtract(authHeader.substring(7));
+            return ResponseEntity.ok(response);
+        } catch (JwtException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
     }
 

@@ -4,3 +4,9 @@ GET http://localhost:8080/api/users
 Authorization: Bearer {{token}}
 
 ###
+
+### USER should receive 403 on list
+GET http://localhost:8080/api/users
+Authorization: Bearer {{user_token}}
+
+###

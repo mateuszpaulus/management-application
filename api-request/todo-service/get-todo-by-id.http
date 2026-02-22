@@ -1,6 +1,18 @@
 ### GET request to get all todos
 @id = 69812e22-7f89-4f3e-bf89-e464de8ea5da
 
-GET http://localhost:4000/api/todos/{{id}}
-#Authorization: Bearer {{token}}
+GET http://localhost:8080/api/todos/{{id}}
+Authorization: Bearer {{user_token}}
+
+###
+
+GET http://localhost:8080/api/todos/{{id}}
+Authorization: Bearer {{token}}
+
+###
+
+### Ownership check (should be 403 when todo belongs to another user)
+GET http://localhost:8080/api/todos/{{id}}
+Authorization: Bearer {{user_token}}
+
 ###

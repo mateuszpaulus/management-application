@@ -1,9 +1,21 @@
 ### Create a new user entity
-POST http://localhost:4001/api/users
+POST http://localhost:8080/api/users
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "username": "admin_user",
   "email": "admin_user@example.com",
+  "password": "password"
+}
+
+### Expected RBAC check (USER token should return 403)
+POST http://localhost:8080/api/users
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "username": "another_user",
+  "email": "another_user@example.com",
   "password": "password"
 }

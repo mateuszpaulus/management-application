@@ -25,7 +25,9 @@ spring:
               predicates:
                 - Path=/api/todos/**
               filters:
-                - JwtValidation
+                - name: JwtValidation
+                  args:
+                    requiredRoles: USER,ADMIN
 
             - id: api-docs-todos-route
               uri: ${todo.service.url}
@@ -35,12 +37,25 @@ spring:
                 - RewritePath=/api-docs/todos,/v3/api-docs
 
             # USERS
-            - id: user-service-route
+            - id: user-service-read-route
               uri: ${user.service.url}
               predicates:
                 - Path=/api/users/**
+                - Method=GET
               filters:
-                - JwtValidation
+                - name: JwtValidation
+                  args:
+                    requiredRoles: USER,ADMIN
+
+            - id: user-service-write-route
+              uri: ${user.service.url}
+              predicates:
+                - Path=/api/users/**
+                - Method=POST,PUT,DELETE
+              filters:
+                - name: JwtValidation
+                  args:
+                    requiredRoles: ADMIN
 
             - id: api-docs-users-route
               uri: ${user.service.url}
