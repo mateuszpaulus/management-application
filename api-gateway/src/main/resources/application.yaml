@@ -1,0 +1,76 @@
+server:
+  port: 8080
+
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:4002}
+
+todo:
+  service:
+    url: ${TODO_SERVICE_URL:http://localhost:4000}
+
+user:
+  service:
+    url: ${USER_SERVICE_URL:http://localhost:4001}
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # TODOS
+            - id: todo-service-route
+              uri: ${todo.service.url}
+              predicates:
+                - Path=/api/todos/**
+
+            - id: api-docs-todos-route
+              uri: ${todo.service.url}
+              predicates:
+                - Path=/api-docs/todos
+              filters:
+                - RewritePath=/api-docs/todos,/v3/api-docs
+
+            # USERS
+            - id: user-service-route
+              uri: ${user.service.url}
+              predicates:
+                - Path=/api/users/**
+
+            - id: api-docs-users-route
+              uri: ${user.service.url}
+              predicates:
+                - Path=/api-docs/users
+              filters:
+                - RewritePath=/api-docs/users,/v3/api-docs
+
+            # AUTH
+            - id: auth-service-route
+              uri: ${auth.service.url}
+              predicates:
+                - Path=/auth/**
+              filters:
+                - StripPrefix=1
+
+            - id: api-docs-auth-route
+              uri: ${auth.service.url}
+              predicates:
+                - Path=/api-docs/auth
+              filters:
+                - RewritePath=/api-docs/auth,/v3/api-docs
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: users
+        url: /api-docs/users
+      - name: todos
+        url: /api-docs/todos
+      - name: auth
+        url: /api-docs/auth
+
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
+    reactor.netty: TRACE

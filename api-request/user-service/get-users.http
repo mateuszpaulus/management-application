@@ -1,4 +1,5 @@
 ### GET request to get all user
-GET http://localhost:4001/api/users
+#GET http://localhost:4001/api/users
+GET http://localhost:8080/api/users
 #Authorization: Bearer {{token}}
 ###
