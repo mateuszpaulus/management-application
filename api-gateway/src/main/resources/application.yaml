@@ -24,6 +24,8 @@ spring:
               uri: ${todo.service.url}
               predicates:
                 - Path=/api/todos/**
+              filters:
+                - JwtValidation
 
             - id: api-docs-todos-route
               uri: ${todo.service.url}
@@ -37,6 +39,8 @@ spring:
               uri: ${user.service.url}
               predicates:
                 - Path=/api/users/**
+              filters:
+                - JwtValidation
 
             - id: api-docs-users-route
               uri: ${user.service.url}

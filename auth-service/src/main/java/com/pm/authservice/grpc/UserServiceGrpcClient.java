@@ -50,6 +50,8 @@ public class UserServiceGrpcClient {
             ValidateCredentialsResponse response = userServiceStub.validateCredentials(request);
 
             log.info("Credentials validated successfully for user: {}", loginRequestDTO.getEmail());
+            log.info("hasUser={}, userId='{}'", response.hasUser(), response.getUser().getId());
+
             return UserDTO.fromUserData(response.getUser());
 
         } catch (StatusRuntimeException e) {
@@ -72,7 +74,7 @@ public class UserServiceGrpcClient {
             }
         }
     }
-    
+
     public UserDTO createUser(RegisterRequestDTO registerRequestDTO) {
         try {
             log.debug("Creating new user: {}", registerRequestDTO.getEmail());

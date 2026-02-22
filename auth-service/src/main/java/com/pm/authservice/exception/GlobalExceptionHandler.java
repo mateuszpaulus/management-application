@@ -2,6 +2,8 @@ package com.pm.authservice.exception;
 
 import com.pm.authservice.dto.errorDto.ErrorResponseDTO;
 import com.pm.authservice.dto.errorDto.ValidationErrorResponseDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +15,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponseDTO> handleValidationExceptions(
@@ -50,7 +53,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDTO> handleGenericException() {
+    public ResponseEntity<ErrorResponseDTO> handleGenericException(Exception ex) {
+        log.error("Unhandled exception", ex);
         ErrorResponseDTO errorResponse = new ErrorResponseDTO("An unexpected error occurred");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }

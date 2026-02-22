@@ -18,8 +18,6 @@ message ValidateCredentialsRequest {
 }
 
 message ValidateCredentialsResponse {
-  //  bool success = 1;
-  //  string message = 2;
   UserData user = 1;
 }
 
@@ -30,9 +28,6 @@ message CreateUserRequest {
 }
 
 message CreateUserResponse {
-  //  bool success = 1;
-  //  string message = 2;
-  //  UserData user = 3;
   UserData user = 1;
 }
 
