@@ -2,7 +2,7 @@ package com.pm.userservice.controller;
 
 import com.pm.userservice.dto.UserRequestDTO;
 import com.pm.userservice.dto.UserResponseDTO;
-import com.pm.userservice.exception.UnauthorizedException;
+import com.pm.userservice.security.AuthContext;
 import com.pm.userservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,8 +18,6 @@ import java.util.UUID;
 @RequestMapping("/api/users")
 @Tag(name = "users", description = "API for managing Users")
 public class UserController {
-    private static final String USER_ID_HEADER = "X-Auth-User-Id";
-    private static final String USER_ROLE_HEADER = "X-Auth-User-Role";
 
     private final UserService userService;
 
@@ -30,19 +28,17 @@ public class UserController {
     @PostMapping
     @Operation(summary = "Create a new User")
     public ResponseEntity<UserResponseDTO> createUser(
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole,
+            AuthContext authContext,
             @Valid @RequestBody UserRequestDTO userRequestDTO
     ) {
-        UserResponseDTO createdUser = userService.createUser(userRequestDTO, requireRole(requesterRole));
+        UserResponseDTO createdUser = userService.createUser(userRequestDTO, authContext);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 
     @GetMapping
     @Operation(summary = "Get Users")
-    public ResponseEntity<List<UserResponseDTO>> getAllUsers(
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
-    ) {
-        List<UserResponseDTO> users = userService.getAllUsers(requireRole(requesterRole));
+    public ResponseEntity<List<UserResponseDTO>> getAllUsers(AuthContext authContext) {
+        List<UserResponseDTO> users = userService.getAllUsers(authContext);
         return ResponseEntity.ok(users);
     }
 
@@ -50,10 +46,9 @@ public class UserController {
     @Operation(summary = "Get User by Id")
     public ResponseEntity<UserResponseDTO> getUserById(
             @PathVariable UUID id,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
+            AuthContext authContext
     ) {
-        UserResponseDTO user = userService.getUserById(id, requireUserId(requesterUserId), requireRole(requesterRole));
+        UserResponseDTO user = userService.getUserById(id, authContext);
         return ResponseEntity.ok(user);
     }
 
@@ -61,10 +56,9 @@ public class UserController {
     @Operation(summary = "Get User by Username")
     public ResponseEntity<UserResponseDTO> getUserByUsername(
             @PathVariable String username,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
+            AuthContext authContext
     ) {
-        UserResponseDTO user = userService.getUserByUsername(username, requireUserId(requesterUserId), requireRole(requesterRole));
+        UserResponseDTO user = userService.getUserByUsername(username, authContext);
         return ResponseEntity.ok(user);
     }
 
@@ -72,10 +66,10 @@ public class UserController {
     @Operation(summary = "Update a User")
     public ResponseEntity<UserResponseDTO> updateUser(
             @PathVariable UUID id,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole,
-            @Valid @RequestBody UserRequestDTO userRequestDTO) {
-        UserResponseDTO updatedUser = userService.updateUser(id, userRequestDTO, requireUserId(requesterUserId), requireRole(requesterRole));
+            AuthContext authContext,
+            @Valid @RequestBody UserRequestDTO userRequestDTO
+    ) {
+        UserResponseDTO updatedUser = userService.updateUser(id, userRequestDTO, authContext);
         return ResponseEntity.ok(updatedUser);
     }
 
@@ -83,29 +77,9 @@ public class UserController {
     @Operation(summary = "Delete a User")
     public ResponseEntity<Void> deleteUser(
             @PathVariable UUID id,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
+            AuthContext authContext
     ) {
-        userService.deleteUser(id, requireUserId(requesterUserId), requireRole(requesterRole));
+        userService.deleteUser(id, authContext);
         return ResponseEntity.noContent().build();
-    }
-
-    private UUID requireUserId(String userIdHeader) {
-        if (userIdHeader == null || userIdHeader.isBlank()) {
-            throw new UnauthorizedException("Missing authentication header: " + USER_ID_HEADER);
-        }
-
-        try {
-            return UUID.fromString(userIdHeader);
-        } catch (IllegalArgumentException e) {
-            throw new UnauthorizedException("Invalid authentication header: " + USER_ID_HEADER);
-        }
-    }
-
-    private String requireRole(String roleHeader) {
-        if (roleHeader == null || roleHeader.isBlank()) {
-            throw new UnauthorizedException("Missing authentication header: " + USER_ROLE_HEADER);
-        }
-        return roleHeader;
     }
 }

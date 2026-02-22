@@ -1,0 +1,13 @@
+### Update todo
+@id = c56a8d6e-402e-470f-b6bf-b5c40b1e90f6
+
+DELETE http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+###
+
+DELETE http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+

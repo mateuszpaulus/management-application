@@ -1,10 +1,10 @@
 package com.pm.todoservice.controller;
 
-
 import com.pm.todoservice.dto.TodoDTO;
+import com.pm.todoservice.dto.TodoPatchDTO;
 import com.pm.todoservice.model.Todo;
+import com.pm.todoservice.security.AuthContext;
 import com.pm.todoservice.service.TodoService;
-import com.pm.todoservice.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -19,8 +19,6 @@ import java.util.UUID;
 @RequestMapping("/api/todos")
 @Tag(name = "todos", description = "API for managing Todos")
 public class TodoController {
-    private static final String USER_ID_HEADER = "X-Auth-User-Id";
-    private static final String USER_ROLE_HEADER = "X-Auth-User-Role";
 
     private final TodoService todoService;
 
@@ -31,21 +29,17 @@ public class TodoController {
     @PostMapping
     @Operation(summary = "Create a new Todo")
     public ResponseEntity<TodoDTO> createTodo(
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole,
+            AuthContext authContext,
             @Valid @RequestBody TodoDTO todoDTO
     ) {
-        TodoDTO createdTodo = todoService.createTodo(todoDTO, requireUserId(requesterUserId), requireRole(requesterRole));
+        TodoDTO createdTodo = todoService.createTodo(todoDTO, authContext);
         return new ResponseEntity<>(createdTodo, HttpStatus.CREATED);
     }
 
     @GetMapping
     @Operation(summary = "Get Todos")
-    public ResponseEntity<List<TodoDTO>> getAllTodos(
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
-    ) {
-        List<TodoDTO> todos = todoService.getAllTodos(requireUserId(requesterUserId), requireRole(requesterRole));
+    public ResponseEntity<List<TodoDTO>> getAllTodos(AuthContext authContext) {
+        List<TodoDTO> todos = todoService.getAllTodos(authContext);
         return ResponseEntity.ok(todos);
     }
 
@@ -53,10 +47,9 @@ public class TodoController {
     @Operation(summary = "Get Todo by Id")
     public ResponseEntity<TodoDTO> getTodoById(
             @PathVariable UUID id,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
+            AuthContext authContext
     ) {
-        TodoDTO todo = todoService.getTodoById(id, requireUserId(requesterUserId), requireRole(requesterRole));
+        TodoDTO todo = todoService.getTodoById(id, authContext);
         return ResponseEntity.ok(todo);
     }
 
@@ -64,10 +57,9 @@ public class TodoController {
     @Operation(summary = "Get entire Todo by Id")
     public ResponseEntity<Todo> getEntireTodoById(
             @PathVariable UUID id,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
+            AuthContext authContext
     ) {
-        Todo todo = todoService.getEntireTodoById(id, requireUserId(requesterUserId), requireRole(requesterRole));
+        Todo todo = todoService.getEntireTodoById(id, authContext);
         return ResponseEntity.ok(todo);
     }
 
@@ -75,10 +67,9 @@ public class TodoController {
     @Operation(summary = "Get Todo by UserId")
     public ResponseEntity<List<TodoDTO>> getTodosByUserId(
             @PathVariable UUID userId,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
+            AuthContext authContext
     ) {
-        List<TodoDTO> todos = todoService.getTodosByUserId(userId, requireUserId(requesterUserId), requireRole(requesterRole));
+        List<TodoDTO> todos = todoService.getTodosByUserId(userId, authContext);
         return ResponseEntity.ok(todos);
     }
 
@@ -86,40 +77,31 @@ public class TodoController {
     @Operation(summary = "Update a Todo")
     public ResponseEntity<TodoDTO> updateTodo(
             @PathVariable UUID id,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole,
-            @Valid @RequestBody TodoDTO todoDTO) {
-        TodoDTO updatedTodo = todoService.updateTodo(id, todoDTO, requireUserId(requesterUserId), requireRole(requesterRole));
+            AuthContext authContext,
+            @Valid @RequestBody TodoDTO todoDTO
+    ) {
+        TodoDTO updatedTodo = todoService.updateTodo(id, todoDTO, authContext);
         return ResponseEntity.ok(updatedTodo);
+    }
+
+    @PatchMapping("/{id}")
+    @Operation(summary = "Patch Todo fields")
+    public ResponseEntity<TodoDTO> patchTodo(
+            @PathVariable UUID id,
+            AuthContext authContext,
+            @RequestBody TodoPatchDTO patchDTO
+    ) {
+        TodoDTO patchedTodo = todoService.patchTodo(id, patchDTO, authContext);
+        return ResponseEntity.ok(patchedTodo);
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a Todo")
     public ResponseEntity<Void> deleteTodo(
             @PathVariable UUID id,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String requesterUserId,
-            @RequestHeader(value = USER_ROLE_HEADER, required = false) String requesterRole
+            AuthContext authContext
     ) {
-        todoService.deleteTodo(id, requireUserId(requesterUserId), requireRole(requesterRole));
+        todoService.deleteTodo(id, authContext);
         return ResponseEntity.noContent().build();
-    }
-
-    private UUID requireUserId(String userIdHeader) {
-        if (userIdHeader == null || userIdHeader.isBlank()) {
-            throw new UnauthorizedException("Missing authentication header: " + USER_ID_HEADER);
-        }
-
-        try {
-            return UUID.fromString(userIdHeader);
-        } catch (IllegalArgumentException e) {
-            throw new UnauthorizedException("Invalid authentication header: " + USER_ID_HEADER);
-        }
-    }
-
-    private String requireRole(String roleHeader) {
-        if (roleHeader == null || roleHeader.isBlank()) {
-            throw new UnauthorizedException("Missing authentication header: " + USER_ROLE_HEADER);
-        }
-        return roleHeader;
     }
 }

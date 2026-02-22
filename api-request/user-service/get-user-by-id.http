@@ -19,3 +19,6 @@ GET http://localhost:8080/api/users/{{admin_user_id}}
 Authorization: Bearer {{user_token}}
 
 ###
+
+
+

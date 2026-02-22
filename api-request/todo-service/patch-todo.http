@@ -1,0 +1,29 @@
+### Patch only completed flag
+@id = 69812e22-7f89-4f3e-bf89-e464de8ea5da
+
+PATCH http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "completed": true
+}
+
+### Patch title + description
+PATCH http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "title": "Patched title",
+  "description": "patched description"
+}
+
+### Owner change (ADMIN only)
+PATCH http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "userId": "{{regular_user_id}}"
+}

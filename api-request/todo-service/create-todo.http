@@ -6,9 +6,21 @@ Authorization: Bearer {{user_token}}
 {
   "title": "First todo",
   "description": "desc 1",
-  "completed": false,
-  "userId": "{{admin_user_id}}"
+  "completed": false
 }
+
+### ADMIN create todo for selected user
+POST http://localhost:8080/api/todos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Admin created todo for user",
+  "description": "created by admin",
+  "completed": false,
+  "userId": "{{regular_user_id}}"
+}
+
 
 ### ADMIN create todo for selected user
 POST http://localhost:8080/api/todos
@@ -18,6 +30,17 @@ Authorization: Bearer {{token}}
 {
   "title": "Admin created todo",
   "description": "created by admin",
+  "completed": false
+}
+
+### ADMIN create todo
+POST http://localhost:8080/api/todos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Admin created todo",
+  "description": "created by admin",
   "completed": false,
-  "userId": "{{regular_user_id}}"
+  "userId": "{{admin_user_id}}"
 }

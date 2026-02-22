@@ -6,6 +6,7 @@ import com.pm.userservice.exception.ForbiddenException;
 import com.pm.userservice.model.User;
 import com.pm.userservice.model.enums.UserRole;
 import com.pm.userservice.repository.UserRepository;
+import com.pm.userservice.security.AuthContext;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,8 +27,8 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO createUser(UserRequestDTO userRequestDTO, String requesterRole) {
-        requireAdmin(requesterRole);
+    public UserResponseDTO createUser(UserRequestDTO userRequestDTO, AuthContext authContext) {
+        requireAdmin(authContext);
 
         if (userRepository.existsByUsername(userRequestDTO.getUsername())) {
             throw new RuntimeException("Username already exists");
@@ -47,32 +48,32 @@ public class UserService {
         return toResponseDTO(savedUser);
     }
 
-    public List<UserResponseDTO> getAllUsers(String requesterRole) {
-        requireAdmin(requesterRole);
+    public List<UserResponseDTO> getAllUsers(AuthContext authContext) {
+        requireAdmin(authContext);
 
         return userRepository.findAll().stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    public UserResponseDTO getUserById(UUID id, UUID requesterUserId, String requesterRole) {
-        validateUserScope(id, requesterUserId, requesterRole);
+    public UserResponseDTO getUserById(UUID id, AuthContext authContext) {
+        validateUserScope(id, authContext);
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
         return toResponseDTO(user);
     }
 
-    public UserResponseDTO getUserByUsername(String username, UUID requesterUserId, String requesterRole) {
+    public UserResponseDTO getUserByUsername(String username, AuthContext authContext) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
-        validateUserScope(user.getId(), requesterUserId, requesterRole);
+        validateUserScope(user.getId(), authContext);
         return toResponseDTO(user);
     }
 
     @Transactional
-    public UserResponseDTO updateUser(UUID id, UserRequestDTO userRequestDTO, UUID requesterUserId, String requesterRole) {
-        validateUserScope(id, requesterUserId, requesterRole);
+    public UserResponseDTO updateUser(UUID id, UserRequestDTO userRequestDTO, AuthContext authContext) {
+        validateUserScope(id, authContext);
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
@@ -98,8 +99,8 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(UUID id, UUID requesterUserId, String requesterRole) {
-        validateUserScope(id, requesterUserId, requesterRole);
+    public void deleteUser(UUID id, AuthContext authContext) {
+        validateUserScope(id, authContext);
 
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("User not found with id: " + id);
@@ -116,23 +117,19 @@ public class UserService {
         );
     }
 
-    private void validateUserScope(UUID targetUserId, UUID requesterUserId, String requesterRole) {
-        if (isAdmin(requesterRole)) {
+    private void validateUserScope(UUID targetUserId, AuthContext authContext) {
+        if (authContext.isAdmin()) {
             return;
         }
 
-        if (!targetUserId.equals(requesterUserId)) {
+        if (!targetUserId.equals(authContext.userId())) {
             throw new ForbiddenException("You do not have access to this user");
         }
     }
 
-    private void requireAdmin(String requesterRole) {
-        if (!isAdmin(requesterRole)) {
+    private void requireAdmin(AuthContext authContext) {
+        if (!authContext.isAdmin()) {
             throw new ForbiddenException("Only ADMIN can perform this operation");
         }
-    }
-
-    private boolean isAdmin(String role) {
-        return "ADMIN".equalsIgnoreCase(role);
     }
 }
