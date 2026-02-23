@@ -14,7 +14,7 @@ POST http://localhost:4002/register
 Content-Type: application/json
 
 {
-  "username": "regular_user",
-  "email": "regular_user@example.com",
+  "username": "regular_user_2",
+  "email": "regular_user_2@example.com",
   "password": "Password1!"
 }

@@ -10,3 +10,13 @@ Authorization: Bearer {{token}}
 #   "email": "...",
 #   "role": "ADMIN" | "USER"
 # }
+
+
+###
+GET http://localhost:8080/auth/validate
+Authorization: Bearer {{user_token}}
+
+
+###
+GET http://localhost:8080/auth/validate
+Authorization: Bearer {{user_2_token}}

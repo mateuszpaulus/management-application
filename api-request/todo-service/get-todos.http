@@ -1,13 +1,80 @@
 ### GET request to get all todos
 #GET http://localhost:4000/api/todos
 
+
 GET http://localhost:8080/api/todos
 Authorization: Bearer {{token}}
 
 ###
 
+GET http://localhost:8080/api/todos?page=0&size=20&sort=createdAt,desc&search=desc
+Authorization: Bearer {{token}}
+
+###
+
 ### USER should only see own todos
-GET http://localhost:8080/api/todos
+GET http://localhost:8080/api/todos?page=0&size=20&sort=createdAt,desc
 Authorization: Bearer {{user_token}}
+
+###
+
+### USER should only see own todos
+GET http://localhost:8080/api/todos?page=0&size=20&sort=createdAt,desc
+Authorization: Bearer {{user_2_token}}
+
+###
+
+### USER own + shared todos
+GET http://localhost:8080/api/todos/list?sort=createdAt,desc
+Authorization: Bearer {{user_token}}
+
+###
+
+### Filter by category
+GET http://localhost:8080/api/todos?category=work&page=0&size=10&sort=title,asc
+Authorization: Bearer {{user_token}}
+
+###
+
+### Filter by tag
+GET http://localhost:8080/api/todos?tag=spring&page=0&size=10&sort=updatedAt,desc
+Authorization: Bearer {{user_token}}
+
+###
+
+### Filter by category and tag
+GET http://localhost:8080/api/todos?category=work&tag=backend&page=0&size=10&sort=priority,asc
+Authorization: Bearer {{token}}
+
+###
+
+### Filter by completion status
+GET http://localhost:8080/api/todos?completed=false&page=0&size=10&sort=dueDate,asc
+Authorization: Bearer {{user_token}}
+
+###
+
+### Combined filters
+GET http://localhost:8080/api/todos?category=work&tag=backend&completed=false&search=spring&page=0&size=10&
+    sort=createdAt,desc
+Authorization: Bearer {{token}}
+
+###
+
+### LIST endpoint (without pagination)
+GET http://localhost:8080/api/todos/list?sort=createdAt,desc
+Authorization: Bearer {{user_token}}
+
+###
+
+### LIST endpoint with filters
+GET http://localhost:8080/api/todos/list?category=work&tag=backend&completed=false&search=cleanup&sort=priority,asc
+Authorization: Bearer {{token}}
+
+###
+
+### Show only archived
+GET http://localhost:8080/api/todos?archived=true&page=0&size=10&sort=updatedAt,desc
+Authorization: Bearer {{token}}
 
 ###

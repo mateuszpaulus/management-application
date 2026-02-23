@@ -1,10 +1,15 @@
 package com.pm.todoservice.model;
 
+import com.pm.todoservice.model.enums.TodoPriority;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -44,6 +49,56 @@ public class Todo {
     @Column(name = "user_id")
     private UUID userId;
 
+    @Setter
+    @Getter
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
+
+    @Setter
+    @Getter
+    @Column(name = "remind_at")
+    private LocalDateTime remindAt;
+
+    @Setter
+    @Getter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority")
+    private TodoPriority priority;
+
+    @Setter
+    @Getter
+    @Column(name = "category", length = 100)
+    private String category;
+
+    @Setter
+    @Getter
+    @ElementCollection
+    @CollectionTable(name = "todo_tags", joinColumns = @JoinColumn(name = "todo_id"))
+    @Column(name = "tag", length = 50)
+    private Set<String> tags = new HashSet<>();
+
+    @Setter
+    @Getter
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "todo_id")
+    @OrderColumn(name = "position")
+    private List<TodoSubtask> subtasks = new ArrayList<>();
+
+    @Setter
+    @Getter
+    @Column(name = "archived")
+    private Boolean archived = false;
+
+    @Setter
+    @Getter
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
+    @Setter
+    @Getter
+    @Column(name = "archived_by")
+    private UUID archivedBy;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -70,17 +125,4 @@ public class Todo {
     public void setCompleted(@NotNull Boolean completed) {
         this.completed = completed;
     }
-
-    public @NotNull LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(@NotNull LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
 }

@@ -1,0 +1,37 @@
+@todoId = ed04a266-e09c-4079-8321-b5b36bcbff50
+@sharedUserId = 480cfc7f-f116-43b3-a939-dfe09419290f
+
+### Share todo with VIEW permission
+POST http://localhost:8080/api/todos/{{todoId}}/shares
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "sharedWithUserId": "{{sharedUserId}}",
+  "permission": "VIEW"
+}
+
+###
+
+### Update share to EDIT permission
+PATCH http://localhost:8080/api/todos/{{todoId}}/shares/{{sharedUserId}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "permission": "EDIT"
+}
+
+###
+
+### Get all shares for todo
+GET http://localhost:8080/api/todos/{{todoId}}/shares
+Authorization: Bearer {{user_token}}
+
+###
+
+### Remove share
+DELETE http://localhost:8080/api/todos/{{todoId}}/shares/{{sharedUserId}}
+Authorization: Bearer {{user_token}}
+
+###

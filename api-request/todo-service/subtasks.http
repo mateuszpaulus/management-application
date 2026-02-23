@@ -1,0 +1,32 @@
+@todoId = 19c31621-d78d-4635-afc0-919b64b0b3e0
+@subtaskId = 80fedf63-a7c3-4e1d-ba82-0c9a33b750d5
+
+### Add subtask
+POST http://localhost:8080/api/todos/{{todoId}}/subtasks
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "title": "New subtask from endpoint",
+  "completed": true
+}
+
+###
+
+### Patch subtask
+PATCH http://localhost:8080/api/todos/{{todoId}}/subtasks/{{subtaskId}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "title": "Updated subtask title",
+  "completed": true
+}
+
+###
+
+### Delete subtask
+DELETE http://localhost:8080/api/todos/{{todoId}}/subtasks/{{subtaskId}}
+Authorization: Bearer {{user_token}}
+
+###

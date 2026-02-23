@@ -1,0 +1,19 @@
+@todoId = ed04a266-e09c-4079-8321-b5b36bcbff50
+
+### Archive todo
+PATCH http://localhost:8080/api/todos/{{todoId}}/archive
+Authorization: Bearer {{user_token}}
+
+###
+
+### Restore todo
+PATCH http://localhost:8080/api/todos/{{todoId}}/restore
+Authorization: Bearer {{user_token}}
+
+###
+
+### Get activity history
+GET http://localhost:8080/api/todos/{{todoId}}/activity
+Authorization: Bearer {{user_token}}
+
+###

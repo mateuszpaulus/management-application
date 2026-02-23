@@ -19,6 +19,48 @@ Authorization: Bearer {{user_token}}
   "description": "patched description"
 }
 
+### Patch deadline + reminder + priority
+PATCH http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "priority": "HIGH",
+  "dueDate": "2026-03-12T18:00:00",
+  "remindAt": "2026-03-12T11:00:00"
+}
+
+### Patch category + tags
+PATCH http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "category": "work",
+  "tags": [
+    "gateway",
+    "cleanup"
+  ]
+}
+
+### Replace subtasks list
+PATCH http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "subtasks": [
+    {
+      "title": "Patch subtask one",
+      "completed": false
+    },
+    {
+      "title": "Patch subtask two",
+      "completed": true
+    }
+  ]
+}
+
 ### Owner change (ADMIN only)
 PATCH http://localhost:8080/api/todos/{{id}}
 Content-Type: application/json

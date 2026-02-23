@@ -1,5 +1,6 @@
 ### Get user by id (ADMIN)
 @id = {{regular_user_id}}
+@id2 = {{regular_user_id_2}}
 @adminId = {{admin_user_id}}
 
 
@@ -7,18 +8,21 @@ GET http://localhost:8080/api/users/{{adminId}}
 Authorization: Bearer {{token}}
 
 ###
-
-
 GET http://localhost:8080/api/users/{{id}}
 Authorization: Bearer {{token}}
-
-###
 
 ### Ownership check (USER reading another user should be 403)
 GET http://localhost:8080/api/users/{{admin_user_id}}
 Authorization: Bearer {{user_token}}
 
-###
+### Ownership check (USER reading another user should be 403)
+GET http://localhost:8080/api/users/{{id}}
+Authorization: Bearer {{user_2_token}}
+
+### Ownership check (USER reading another user should be 403)
+GET http://localhost:8080/api/users/{{id2}}
+Authorization: Bearer {{user_2_token}}
+
 
 
 

@@ -1,156 +1,127 @@
 package com.pm.todoservice.service;
 
+import com.pm.todoservice.dto.SubtaskDTO;
+import com.pm.todoservice.dto.SubtaskPatchDTO;
+import com.pm.todoservice.dto.TodoActivityDTO;
 import com.pm.todoservice.dto.TodoDTO;
 import com.pm.todoservice.dto.TodoPatchDTO;
-import com.pm.todoservice.exception.ForbiddenException;
+import com.pm.todoservice.dto.TodoShareDTO;
+import com.pm.todoservice.dto.TodoShareRequestDTO;
+import com.pm.todoservice.dto.TodoShareUpdateDTO;
 import com.pm.todoservice.model.Todo;
-import com.pm.todoservice.repository.TodoRepository;
 import com.pm.todoservice.security.AuthContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class TodoService {
 
-    private final TodoRepository todoRepository;
+    private final TodoCommandService commandService;
+    private final TodoQueryService queryService;
 
-    public TodoService(TodoRepository todoRepository) {
-        this.todoRepository = todoRepository;
+    public TodoService(TodoCommandService commandService, TodoQueryService queryService) {
+        this.commandService = commandService;
+        this.queryService = queryService;
     }
 
-    @Transactional
     public TodoDTO createTodo(TodoDTO todoDTO, AuthContext authContext) {
-        Todo todo = new Todo();
-        todo.setTitle(todoDTO.getTitle());
-        todo.setDescription(todoDTO.getDescription());
-        todo.setCompleted(todoDTO.getCompleted());
-
-        if (authContext.isAdmin()) {
-            todo.setUserId(todoDTO.getUserId() != null ? todoDTO.getUserId() : authContext.userId());
-        } else {
-            todo.setUserId(authContext.userId());
-        }
-
-        Todo savedTodo = todoRepository.save(todo);
-        return convertToDTO(savedTodo);
+        return commandService.createTodo(todoDTO, authContext);
     }
 
-    public List<TodoDTO> getAllTodos(AuthContext authContext) {
-        List<Todo> todos = authContext.isAdmin()
-                ? todoRepository.findAll()
-                : todoRepository.findByUserId(authContext.userId());
+    public Page<TodoDTO> getAllTodos(
+            AuthContext authContext,
+            String category,
+            String tag,
+            Boolean completed,
+            Boolean archived,
+            String search,
+            Pageable pageable
+    ) {
+        return queryService.getAllTodos(authContext, category, tag, completed, archived, search, pageable);
+    }
 
-        return todos.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<TodoDTO> getAllTodosList(
+            AuthContext authContext,
+            String category,
+            String tag,
+            Boolean completed,
+            Boolean archived,
+            String search,
+            Sort sort
+    ) {
+        return queryService.getAllTodosList(authContext, category, tag, completed, archived, search, sort);
     }
 
     public TodoDTO getTodoById(UUID id, AuthContext authContext) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Todo not found with id: " + id));
-        validateOwnership(todo, authContext);
-        return convertToDTO(todo);
+        return queryService.getTodoById(id, authContext);
     }
 
     public Todo getEntireTodoById(UUID id, AuthContext authContext) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Todo not found with id: " + id));
-        validateOwnership(todo, authContext);
-        return todo;
+        return queryService.getEntireTodoById(id, authContext);
     }
 
     public List<TodoDTO> getTodosByUserId(UUID userId, AuthContext authContext) {
-        if (!authContext.isAdmin() && !userId.equals(authContext.userId())) {
-            throw new ForbiddenException("You can only access your own todos");
-        }
-
-        return todoRepository.findByUserId(userId).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return queryService.getTodosByUserId(userId, authContext);
     }
 
-    @Transactional
     public TodoDTO updateTodo(UUID id, TodoDTO todoDTO, AuthContext authContext) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Todo not found with id: " + id));
-        validateOwnership(todo, authContext);
-
-        todo.setTitle(todoDTO.getTitle());
-        todo.setDescription(todoDTO.getDescription());
-        todo.setCompleted(todoDTO.getCompleted());
-        if (authContext.isAdmin() && todoDTO.getUserId() != null) {
-            todo.setUserId(todoDTO.getUserId());
-        }
-
-        Todo updatedTodo = todoRepository.save(todo);
-        return convertToDTO(updatedTodo);
+        return commandService.updateTodo(id, todoDTO, authContext);
     }
 
-    @Transactional
     public TodoDTO patchTodo(UUID id, TodoPatchDTO patchDTO, AuthContext authContext) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Todo not found with id: " + id));
-        validateOwnership(todo, authContext);
-
-        if (patchDTO.getTitle() != null) {
-            String title = patchDTO.getTitle().trim();
-            if (title.isEmpty() || title.length() > 255) {
-                throw new RuntimeException("Title must be between 1 and 255 characters");
-            }
-            todo.setTitle(title);
-        }
-
-        if (patchDTO.getDescription() != null) {
-            if (patchDTO.getDescription().length() > 1000) {
-                throw new RuntimeException("Description cannot exceed 1000 characters");
-            }
-            todo.setDescription(patchDTO.getDescription());
-        }
-
-        if (patchDTO.getCompleted() != null) {
-            todo.setCompleted(patchDTO.getCompleted());
-        }
-
-        if (patchDTO.getUserId() != null) {
-            if (!authContext.isAdmin()) {
-                throw new ForbiddenException("Only ADMIN can change todo owner");
-            }
-            todo.setUserId(patchDTO.getUserId());
-        }
-
-        Todo updatedTodo = todoRepository.save(todo);
-        return convertToDTO(updatedTodo);
+        return commandService.patchTodo(id, patchDTO, authContext);
     }
 
-    @Transactional
     public void deleteTodo(UUID id, AuthContext authContext) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Todo not found with id: " + id));
-        validateOwnership(todo, authContext);
-        todoRepository.deleteById(id);
+        commandService.deleteTodo(id, authContext);
     }
 
-    private TodoDTO convertToDTO(Todo todo) {
-        TodoDTO dto = new TodoDTO();
-        dto.setId(todo.getId());
-        dto.setTitle(todo.getTitle());
-        dto.setDescription(todo.getDescription());
-        dto.setCompleted(todo.getCompleted());
-        dto.setUserId(todo.getUserId());
-        return dto;
+    public long deleteAllTodosByUserId(UUID userId, AuthContext authContext) {
+        return commandService.deleteAllTodosByUserId(userId, authContext);
     }
 
-    private void validateOwnership(Todo todo, AuthContext authContext) {
-        if (authContext.isAdmin()) {
-            return;
-        }
+    public TodoDTO addSubtask(UUID todoId, SubtaskDTO subtaskDTO, AuthContext authContext) {
+        return commandService.addSubtask(todoId, subtaskDTO, authContext);
+    }
 
-        if (todo.getUserId() == null || !todo.getUserId().equals(authContext.userId())) {
-            throw new ForbiddenException("You do not have access to this todo");
-        }
+    public TodoDTO patchSubtask(UUID todoId, UUID subtaskId, SubtaskPatchDTO patchDTO, AuthContext authContext) {
+        return commandService.patchSubtask(todoId, subtaskId, patchDTO, authContext);
+    }
+
+    public TodoDTO deleteSubtask(UUID todoId, UUID subtaskId, AuthContext authContext) {
+        return commandService.deleteSubtask(todoId, subtaskId, authContext);
+    }
+
+    public TodoDTO archiveTodo(UUID id, AuthContext authContext) {
+        return commandService.archiveTodo(id, authContext);
+    }
+
+    public TodoDTO restoreTodo(UUID id, AuthContext authContext) {
+        return commandService.restoreTodo(id, authContext);
+    }
+
+    public List<TodoActivityDTO> getTodoActivity(UUID id, AuthContext authContext) {
+        return queryService.getTodoActivity(id, authContext);
+    }
+
+    public List<TodoShareDTO> getTodoShares(UUID id, AuthContext authContext) {
+        return queryService.getTodoShares(id, authContext);
+    }
+
+    public TodoShareDTO addShare(UUID id, TodoShareRequestDTO requestDTO, AuthContext authContext) {
+        return commandService.addShare(id, requestDTO, authContext);
+    }
+
+    public TodoShareDTO updateShare(UUID id, UUID sharedUserId, TodoShareUpdateDTO requestDTO, AuthContext authContext) {
+        return commandService.updateShare(id, sharedUserId, requestDTO, authContext);
+    }
+
+    public void removeShare(UUID id, UUID sharedUserId, AuthContext authContext) {
+        commandService.removeShare(id, sharedUserId, authContext);
     }
 }

@@ -6,7 +6,22 @@ Authorization: Bearer {{user_token}}
 {
   "title": "First todo",
   "description": "desc 1",
-  "completed": false
+  "completed": false,
+  "priority": null,
+  "category": "work",
+  "tags": ["backend", "spring"],
+  "subtasks": [
+    {
+      "title": "Prepare API contract",
+      "completed": false
+    },
+    {
+      "title": "Implement repository",
+      "completed": true
+    }
+  ],
+  "dueDate": "2026-03-01T18:00:00",
+  "remindAt": "2026-03-01T09:00:00"
 }
 
 ### ADMIN create todo for selected user
@@ -18,6 +33,17 @@ Authorization: Bearer {{token}}
   "title": "Admin created todo for user",
   "description": "created by admin",
   "completed": false,
+  "priority": "MEDIUM",
+  "category": "personal",
+  "tags": ["planning", "important"],
+  "subtasks": [
+    {
+      "title": "Review budget",
+      "completed": false
+    }
+  ],
+  "dueDate": "2026-03-03T16:00:00",
+  "remindAt": "2026-03-03T12:00:00",
   "userId": "{{regular_user_id}}"
 }
 
@@ -30,7 +56,11 @@ Authorization: Bearer {{token}}
 {
   "title": "Admin created todo",
   "description": "created by admin",
-  "completed": false
+  "completed": false,
+  "priority": "LOW",
+  "category": "admin",
+  "tags": ["review"],
+  "dueDate": "2026-03-05T18:00:00"
 }
 
 ### ADMIN create todo
@@ -42,5 +72,10 @@ Authorization: Bearer {{token}}
   "title": "Admin created todo",
   "description": "created by admin",
   "completed": false,
+  "priority": "HIGH",
+  "category": "security",
+  "tags": ["token", "hotfix"],
+  "dueDate": "2026-03-08T18:00:00",
+  "remindAt": "2026-03-08T10:00:00",
   "userId": "{{admin_user_id}}"
 }

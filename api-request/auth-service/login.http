@@ -29,3 +29,18 @@ Content-Type: application/json
 %}
 
 ###
+### Login request for regular USER token
+#POST http://localhost:4002/login
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "regular_user_2@example.com",
+  "password": "Password1!"
+}
+> {%
+  client.global.set("user_2_token", response.body.token)
+  client.global.set("regular_user_id_2", response.body.user.id)
+%}
+
+###

@@ -1,0 +1,15 @@
+### USER deletes all own todos
+DELETE http://localhost:8080/api/todos/user/{{regular_user_id}}
+Authorization: Bearer {{user_token}}
+
+### USER tries deleting another user's todos (should be 403)
+DELETE http://localhost:8080/api/todos/user/{{admin_user_id}}
+Authorization: Bearer {{user_token}}
+
+### ADMIN deletes todos for any user
+DELETE http://localhost:8080/api/todos/user/{{regular_user_id}}
+Authorization: Bearer {{token}}
+
+### ADMIN deletes todos
+DELETE http://localhost:8080/api/todos/user/{{admin_user_id}}
+Authorization: Bearer {{token}}

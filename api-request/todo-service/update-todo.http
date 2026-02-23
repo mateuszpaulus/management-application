@@ -8,5 +8,20 @@ Authorization: Bearer {{user_token}}
 {
   "title": "Updated todo title",
   "description": "updated desc",
-  "completed": false
+  "completed": false,
+  "priority": "MEDIUM",
+  "category": "study",
+  "tags": ["java", "refactor"],
+  "subtasks": [
+    {
+      "title": "Read docs",
+      "completed": true
+    },
+    {
+      "title": "Write tests",
+      "completed": false
+    }
+  ],
+  "dueDate": "2026-03-10T20:00:00",
+  "remindAt": "2026-03-10T09:00:00"
 }
