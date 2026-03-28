@@ -1,0 +1,102 @@
+@boardId = 11111111-1111-1111-1111-111111111111
+@sectionId = 22222222-2222-2222-2222-222222222222
+@sharedUserId = 33333333-3333-3333-3333-333333333333
+
+### Create board
+POST http://localhost:8080/api/boards
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "name": "My Product Board"
+}
+
+###
+
+### Get boards
+GET http://localhost:8080/api/boards
+Authorization: Bearer {{user_token}}
+
+###
+
+### Get board by id
+GET http://localhost:8080/api/boards/{{boardId}}
+Authorization: Bearer {{user_token}}
+
+###
+
+### Update board
+PATCH http://localhost:8080/api/boards/{{boardId}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "name": "My Product Board V2"
+}
+
+###
+
+### Add section
+POST http://localhost:8080/api/boards/{{boardId}}/sections
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "name": "To Do",
+  "position": 0
+}
+
+###
+
+### Update section
+PATCH http://localhost:8080/api/boards/{{boardId}}/sections/{{sectionId}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "name": "In Progress",
+  "position": 1
+}
+
+###
+
+### Delete section
+DELETE http://localhost:8080/api/boards/{{boardId}}/sections/{{sectionId}}
+Authorization: Bearer {{user_token}}
+
+###
+
+### Share board
+POST http://localhost:8080/api/boards/{{boardId}}/shares
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "sharedWithUserId": "{{sharedUserId}}",
+  "permission": "EDIT"
+}
+
+###
+
+### Get board shares
+GET http://localhost:8080/api/boards/{{boardId}}/shares
+Authorization: Bearer {{user_token}}
+
+###
+
+### Update board share
+PATCH http://localhost:8080/api/boards/{{boardId}}/shares/{{sharedUserId}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "permission": "VIEW"
+}
+
+###
+
+### Remove board share
+DELETE http://localhost:8080/api/boards/{{boardId}}/shares/{{sharedUserId}}
+Authorization: Bearer {{user_token}}
+
+###

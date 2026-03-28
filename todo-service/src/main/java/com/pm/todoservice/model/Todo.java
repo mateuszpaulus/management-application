@@ -51,6 +51,11 @@ public class Todo {
 
     @Setter
     @Getter
+    @Column(name = "section_id")
+    private UUID sectionId;
+
+    @Setter
+    @Getter
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 

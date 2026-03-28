@@ -38,6 +38,10 @@ public class TodoDTO {
 
     @Setter
     @Getter
+    private UUID sectionId;
+
+    @Setter
+    @Getter
     private LocalDateTime dueDate;
 
     @Setter

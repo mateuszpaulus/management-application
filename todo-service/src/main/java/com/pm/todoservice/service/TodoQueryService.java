@@ -3,9 +3,12 @@ package com.pm.todoservice.service;
 import com.pm.todoservice.dto.TodoDTO;
 import com.pm.todoservice.dto.TodoActivityDTO;
 import com.pm.todoservice.dto.TodoShareDTO;
+import com.pm.todoservice.model.Board;
 import com.pm.todoservice.model.Todo;
 import com.pm.todoservice.model.TodoShare;
 import com.pm.todoservice.model.enums.TodoSharePermission;
+import com.pm.todoservice.repository.BoardRepository;
+import com.pm.todoservice.repository.BoardSectionRepository;
 import com.pm.todoservice.repository.TodoRepository;
 import com.pm.todoservice.repository.TodoShareRepository;
 import com.pm.todoservice.security.AuthContext;
@@ -32,6 +35,9 @@ public class TodoQueryService {
     private final TodoMapper todoMapper;
     private final TodoActivityService todoActivityService;
     private final TodoShareRepository todoShareRepository;
+    private final BoardRepository boardRepository;
+    private final BoardSectionRepository boardSectionRepository;
+    private final BoardAccessService boardAccessService;
 
     public TodoQueryService(
             TodoRepository todoRepository,
@@ -39,7 +45,10 @@ public class TodoQueryService {
             TodoValidationService validationService,
             TodoMapper todoMapper,
             TodoActivityService todoActivityService,
-            TodoShareRepository todoShareRepository
+            TodoShareRepository todoShareRepository,
+            BoardRepository boardRepository,
+            BoardSectionRepository boardSectionRepository,
+            BoardAccessService boardAccessService
     ) {
         this.todoRepository = todoRepository;
         this.authorizationService = authorizationService;
@@ -47,6 +56,9 @@ public class TodoQueryService {
         this.todoMapper = todoMapper;
         this.todoActivityService = todoActivityService;
         this.todoShareRepository = todoShareRepository;
+        this.boardRepository = boardRepository;
+        this.boardSectionRepository = boardSectionRepository;
+        this.boardAccessService = boardAccessService;
     }
 
     public Page<TodoDTO> getAllTodos(
@@ -56,20 +68,33 @@ public class TodoQueryService {
             Boolean completed,
             Boolean archived,
             String search,
+            UUID boardId,
+            UUID sectionId,
             Pageable pageable
     ) {
         String normalizedCategory = validationService.normalizeQueryFilter(category);
         String normalizedTag = validationService.normalizeQueryFilter(tag);
         String normalizedSearch = validationService.normalizeQueryFilter(search);
+
         Set<UUID> sharedTodoIds = authContext.isAdmin()
                 ? Set.of()
                 : todoShareRepository.findTodoIdsBySharedWithUserIdAndPermissionIn(
                 authContext.userId(),
                 List.of(TodoSharePermission.VIEW, TodoSharePermission.EDIT)
         );
+        Set<UUID> readableSectionIds = resolveReadableSectionIds(authContext);
 
         Specification<Todo> specification = buildSpecification(
-                authContext, normalizedCategory, normalizedTag, completed, archived, normalizedSearch, sharedTodoIds
+                authContext,
+                normalizedCategory,
+                normalizedTag,
+                completed,
+                archived,
+                normalizedSearch,
+                boardId,
+                sectionId,
+                sharedTodoIds,
+                readableSectionIds
         );
 
         Page<TodoDTO> page = todoRepository.findAll(specification, pageable).map(todoMapper::toDto);
@@ -84,6 +109,8 @@ public class TodoQueryService {
             Boolean completed,
             Boolean archived,
             String search,
+            UUID boardId,
+            UUID sectionId,
             Sort sort
     ) {
         String normalizedCategory = validationService.normalizeQueryFilter(category);
@@ -95,9 +122,19 @@ public class TodoQueryService {
                 authContext.userId(),
                 List.of(TodoSharePermission.VIEW, TodoSharePermission.EDIT)
         );
+        Set<UUID> readableSectionIds = resolveReadableSectionIds(authContext);
 
         Specification<Todo> specification = buildSpecification(
-                authContext, normalizedCategory, normalizedTag, completed, archived, normalizedSearch, sharedTodoIds
+                authContext,
+                normalizedCategory,
+                normalizedTag,
+                completed,
+                archived,
+                normalizedSearch,
+                boardId,
+                sectionId,
+                sharedTodoIds,
+                readableSectionIds
         );
 
         List<TodoDTO> todos = todoRepository.findAll(specification, sort).stream().map(todoMapper::toDto).collect(Collectors.toList());
@@ -152,20 +189,55 @@ public class TodoQueryService {
             Boolean completed,
             Boolean archived,
             String search,
-            Set<UUID> sharedTodoIds
+            UUID boardId,
+            UUID sectionId,
+            Set<UUID> sharedTodoIds,
+            Set<UUID> readableSectionIds
     ) {
         Specification<Todo> specification = (root, query, cb) -> cb.conjunction();
 
         if (!authContext.isAdmin()) {
             specification = specification.and((root, query, cb) -> {
-                if (sharedTodoIds == null || sharedTodoIds.isEmpty()) {
+                boolean hasSharedTodos = sharedTodoIds != null && !sharedTodoIds.isEmpty();
+                boolean hasSharedSections = readableSectionIds != null && !readableSectionIds.isEmpty();
+
+                if (!hasSharedTodos && !hasSharedSections) {
                     return cb.equal(root.get("userId"), authContext.userId());
                 }
+
+                if (hasSharedTodos && hasSharedSections) {
+                    return cb.or(
+                            cb.equal(root.get("userId"), authContext.userId()),
+                            root.get("id").in(sharedTodoIds),
+                            root.get("sectionId").in(readableSectionIds)
+                    );
+                }
+
+                if (hasSharedTodos) {
+                    return cb.or(
+                            cb.equal(root.get("userId"), authContext.userId()),
+                            root.get("id").in(sharedTodoIds)
+                    );
+                }
+
                 return cb.or(
                         cb.equal(root.get("userId"), authContext.userId()),
-                        root.get("id").in(sharedTodoIds)
+                        root.get("sectionId").in(readableSectionIds)
                 );
             });
+        }
+
+        if (boardId != null) {
+            Set<UUID> sectionIdsForBoard = boardSectionRepository.findIdsByBoardIdIn(Set.of(boardId));
+            if (sectionIdsForBoard.isEmpty()) {
+                specification = specification.and((root, query, cb) -> cb.disjunction());
+            } else {
+                specification = specification.and((root, query, cb) -> root.get("sectionId").in(sectionIdsForBoard));
+            }
+        }
+
+        if (sectionId != null) {
+            specification = specification.and((root, query, cb) -> cb.equal(root.get("sectionId"), sectionId));
         }
 
         if (category != null) {
@@ -202,6 +274,24 @@ public class TodoQueryService {
         }
 
         return specification;
+    }
+
+    private Set<UUID> resolveReadableSectionIds(AuthContext authContext) {
+        if (authContext.isAdmin()) {
+            return Set.of();
+        }
+
+        Set<UUID> ownedBoardIds = boardRepository.findByOwnerUserId(authContext.userId()).stream()
+                .map(Board::getId)
+                .collect(Collectors.toSet());
+        Set<UUID> sharedBoardIds = boardAccessService.getReadableBoardIds(authContext);
+
+        Set<UUID> allBoardIds = new java.util.HashSet<>(ownedBoardIds);
+        allBoardIds.addAll(sharedBoardIds);
+        if (allBoardIds.isEmpty()) {
+            return Set.of();
+        }
+        return boardSectionRepository.findIdsByBoardIdIn(allBoardIds);
     }
 
     private TodoShareDTO toShareDto(TodoShare share) {

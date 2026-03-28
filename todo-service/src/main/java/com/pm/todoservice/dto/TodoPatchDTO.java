@@ -18,6 +18,7 @@ public class TodoPatchDTO {
     private String description;
     private Boolean completed;
     private UUID userId;
+    private UUID sectionId;
     private LocalDateTime dueDate;
     private LocalDateTime remindAt;
     private TodoPriority priority;

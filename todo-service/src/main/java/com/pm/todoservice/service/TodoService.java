@@ -40,9 +40,11 @@ public class TodoService {
             Boolean completed,
             Boolean archived,
             String search,
+            UUID boardId,
+            UUID sectionId,
             Pageable pageable
     ) {
-        return queryService.getAllTodos(authContext, category, tag, completed, archived, search, pageable);
+        return queryService.getAllTodos(authContext, category, tag, completed, archived, search, boardId, sectionId, pageable);
     }
 
     public List<TodoDTO> getAllTodosList(
@@ -52,9 +54,11 @@ public class TodoService {
             Boolean completed,
             Boolean archived,
             String search,
+            UUID boardId,
+            UUID sectionId,
             Sort sort
     ) {
-        return queryService.getAllTodosList(authContext, category, tag, completed, archived, search, sort);
+        return queryService.getAllTodosList(authContext, category, tag, completed, archived, search, boardId, sectionId, sort);
     }
 
     public TodoDTO getTodoById(UUID id, AuthContext authContext) {

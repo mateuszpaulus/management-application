@@ -43,6 +43,15 @@ Authorization: Bearer {{user_token}}
   ]
 }
 
+### Move todo to another section
+PATCH http://localhost:8080/api/todos/{{id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "sectionId": "{{another_section_id}}"
+}
+
 ### Replace subtasks list
 PATCH http://localhost:8080/api/todos/{{id}}
 Content-Type: application/json

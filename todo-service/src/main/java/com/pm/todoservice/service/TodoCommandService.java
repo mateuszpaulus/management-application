@@ -11,6 +11,8 @@ import com.pm.todoservice.model.Todo;
 import com.pm.todoservice.model.TodoShare;
 import com.pm.todoservice.model.TodoSubtask;
 import com.pm.todoservice.model.enums.TodoActivityAction;
+import com.pm.todoservice.repository.BoardRepository;
+import com.pm.todoservice.repository.BoardSectionRepository;
 import com.pm.todoservice.repository.TodoRepository;
 import com.pm.todoservice.repository.TodoShareRepository;
 import com.pm.todoservice.security.AuthContext;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -29,6 +32,9 @@ public class TodoCommandService {
     private final TodoMapper todoMapper;
     private final TodoActivityService todoActivityService;
     private final TodoShareRepository todoShareRepository;
+    private final BoardSectionRepository boardSectionRepository;
+    private final BoardRepository boardRepository;
+    private final BoardAccessService boardAccessService;
 
     public TodoCommandService(
             TodoRepository todoRepository,
@@ -36,7 +42,10 @@ public class TodoCommandService {
             TodoValidationService validationService,
             TodoMapper todoMapper,
             TodoActivityService todoActivityService,
-            TodoShareRepository todoShareRepository
+            TodoShareRepository todoShareRepository,
+            BoardSectionRepository boardSectionRepository,
+            BoardRepository boardRepository,
+            BoardAccessService boardAccessService
     ) {
         this.todoRepository = todoRepository;
         this.authorizationService = authorizationService;
@@ -44,6 +53,9 @@ public class TodoCommandService {
         this.todoMapper = todoMapper;
         this.todoActivityService = todoActivityService;
         this.todoShareRepository = todoShareRepository;
+        this.boardSectionRepository = boardSectionRepository;
+        this.boardRepository = boardRepository;
+        this.boardAccessService = boardAccessService;
     }
 
     @Transactional
@@ -58,8 +70,10 @@ public class TodoCommandService {
         todo.setCategory(validationService.normalizeCategory(todoDTO.getCategory()));
         todo.setTags(validationService.normalizeTags(todoDTO.getTags()));
         todo.setSubtasks(validationService.normalizeSubtasks(todoDTO.getSubtasks()));
+        todo.setSectionId(todoDTO.getSectionId());
 
         validationService.validateSchedule(todo.getDueDate(), todo.getRemindAt());
+        validateSectionEditAccess(todo.getSectionId(), authContext);
 
         if (authContext.isAdmin()) {
             todo.setUserId(todoDTO.getUserId() != null ? todoDTO.getUserId() : authContext.userId());
@@ -76,6 +90,7 @@ public class TodoCommandService {
     public TodoDTO updateTodo(UUID id, TodoDTO todoDTO, AuthContext authContext) {
         Todo todo = findByIdOrThrow(id);
         authorizationService.validateEditAccess(todo, authContext);
+        validateSectionTransitionAccess(todo.getSectionId(), todoDTO.getSectionId(), authContext);
 
         todo.setTitle(todoDTO.getTitle());
         todo.setDescription(todoDTO.getDescription());
@@ -86,8 +101,10 @@ public class TodoCommandService {
         todo.setCategory(validationService.normalizeCategory(todoDTO.getCategory()));
         todo.setTags(validationService.normalizeTags(todoDTO.getTags()));
         todo.setSubtasks(validationService.normalizeSubtasks(todoDTO.getSubtasks()));
+        todo.setSectionId(todoDTO.getSectionId());
 
         validationService.validateSchedule(todo.getDueDate(), todo.getRemindAt());
+        validateSectionEditAccess(todo.getSectionId(), authContext);
 
         if (authContext.isAdmin() && todoDTO.getUserId() != null) {
             todo.setUserId(todoDTO.getUserId());
@@ -119,6 +136,12 @@ public class TodoCommandService {
         if (patchDTO.getUserId() != null) {
             authorizationService.requireAdmin(authContext, "Only ADMIN can change todo owner");
             todo.setUserId(patchDTO.getUserId());
+        }
+
+        if (patchDTO.getSectionId() != null) {
+            validateSectionTransitionAccess(todo.getSectionId(), patchDTO.getSectionId(), authContext);
+            todo.setSectionId(patchDTO.getSectionId());
+            validateSectionEditAccess(todo.getSectionId(), authContext);
         }
 
         if (patchDTO.getDueDate() != null) {
@@ -325,6 +348,32 @@ public class TodoCommandService {
                 .filter(subtask -> subtaskId.equals(subtask.getId()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Subtask not found with id: " + subtaskId));
+    }
+
+    private void validateSectionEditAccess(UUID sectionId, AuthContext authContext) {
+        if (sectionId == null) {
+            return;
+        }
+
+        java.util.UUID boardId = boardSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Section not found with id: " + sectionId))
+                .getBoardId();
+
+        com.pm.todoservice.model.Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new RuntimeException("Board not found with id: " + boardId));
+
+        boardAccessService.validateEditBoard(board, authContext);
+    }
+
+    private void validateSectionTransitionAccess(UUID currentSectionId, UUID targetSectionId, AuthContext authContext) {
+        if (Objects.equals(currentSectionId, targetSectionId)) {
+            return;
+        }
+
+        // Leaving a board section requires EDIT access to the source board.
+        validateSectionEditAccess(currentSectionId, authContext);
+        // Entering a board section requires EDIT access to the target board.
+        validateSectionEditAccess(targetSectionId, authContext);
     }
 
     private TodoShareDTO toShareDto(TodoShare share) {

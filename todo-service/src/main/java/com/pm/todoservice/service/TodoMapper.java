@@ -21,6 +21,7 @@ public class TodoMapper {
         dto.setDescription(todo.getDescription());
         dto.setCompleted(todo.getCompleted());
         dto.setUserId(todo.getUserId());
+        dto.setSectionId(todo.getSectionId());
         dto.setDueDate(todo.getDueDate());
         dto.setRemindAt(todo.getRemindAt());
         dto.setPriority(todo.getPriority());

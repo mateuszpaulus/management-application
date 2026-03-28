@@ -58,12 +58,14 @@ public class TodoController {
             @RequestParam(required = false) Boolean completed,
             @RequestParam(required = false) Boolean archived,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) UUID boardId,
+            @RequestParam(required = false) UUID sectionId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
         Pageable pageable = todoPageableFactory.buildPageable(page, size, sort);
-        Page<TodoDTO> todos = todoService.getAllTodos(authContext, category, tag, completed, archived, search, pageable);
+        Page<TodoDTO> todos = todoService.getAllTodos(authContext, category, tag, completed, archived, search, boardId, sectionId, pageable);
         return ResponseEntity.ok(todos);
     }
 
@@ -76,10 +78,12 @@ public class TodoController {
             @RequestParam(required = false) Boolean completed,
             @RequestParam(required = false) Boolean archived,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) UUID boardId,
+            @RequestParam(required = false) UUID sectionId,
             @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
         Sort order = todoPageableFactory.buildSort(sort);
-        List<TodoDTO> todos = todoService.getAllTodosList(authContext, category, tag, completed, archived, search, order);
+        List<TodoDTO> todos = todoService.getAllTodosList(authContext, category, tag, completed, archived, search, boardId, sectionId, order);
         return ResponseEntity.ok(todos);
     }
 

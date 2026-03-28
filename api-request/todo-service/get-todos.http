@@ -30,6 +30,18 @@ Authorization: Bearer {{user_token}}
 
 ###
 
+### Filter by board
+GET http://localhost:8080/api/todos?boardId={{board_id}}&page=0&size=20&sort=createdAt,desc
+Authorization: Bearer {{user_token}}
+
+###
+
+### Filter by section
+GET http://localhost:8080/api/todos?sectionId={{section_id}}&page=0&size=20&sort=createdAt,desc
+Authorization: Bearer {{user_token}}
+
+###
+
 ### Filter by category
 GET http://localhost:8080/api/todos?category=work&page=0&size=10&sort=title,asc
 Authorization: Bearer {{user_token}}

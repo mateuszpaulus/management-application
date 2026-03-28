@@ -9,6 +9,7 @@ Authorization: Bearer {{user_token}}
   "title": "Updated todo title",
   "description": "updated desc",
   "completed": false,
+  "sectionId": "{{section_id}}",
   "priority": "MEDIUM",
   "category": "study",
   "tags": ["java", "refactor"],
